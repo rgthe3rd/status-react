@@ -1,13 +1,14 @@
 (ns status-im.chat.models.input
   (:require [clojure.string :as str]
+            [status-im.bots.constants :as bots-constants]
             [status-im.components.react :as rc]
             [status-im.native-module.core :as status]
             [status-im.chat.constants :as const]
+            [status-im.chat.models.commands :as commands-model]
             [status-im.chat.views.input.validation-messages :refer [validation-message]]
+            [status-im.chat.utils :as chat-utils]
             [status-im.i18n :as i18n]
             [status-im.utils.phone-number :as phone-number]
-            [status-im.chat.utils :as chat-utils]
-            [status-im.bots.constants :as bots-constants]
             [status-im.js-dependencies :as dependencies]
             [taoensso.timbre :as log]))
 
@@ -34,28 +35,32 @@
        (or (str/starts-with? text const/bot-char)
            (str/starts-with? text const/command-char))))
 
+;; TODO(alwx): update tests
 (defn possible-chat-actions
   "Returns a map of possible chat actions (commands and response) for a specified `chat-id`.
   Every map's key is a command's name, value is a pair of [`command` `message-id`]. In the case
   of commands `message-id` is `:any`, for responses value contains the actual id.
 
   Example of output:
-  {:browse  [{:description \"Launch the browser\" :name \"browse\" ...} :any]
-   :request [{:description \"Request a payment\" :name \"request\" ...} \"message-id\"]}"
+  [[{:description \"Launch the browser\" :name \"browse\" ...} :any]
+   [{:description \"Request a payment\" :name \"request\" ...} \"message-id\"]]"
   [{:keys [global-commands current-chat-id] :as db} chat-id]
   (let [chat-id (or chat-id current-chat-id)
         {:keys [contacts requests]} (get-in db [:chats chat-id])]
     (->> contacts
          (map (fn [{:keys [identity]}]
-                 (let [{:keys [commands responses]} (get-in db [:contacts/contacts identity])]
-                   (let [commands'  (mapv (fn [[k v]] [k [v :any]]) (merge global-commands commands))
-                         responses' (mapv (fn [{:keys [message-id type]}]
-                                            (when-let [response (get responses type)]
-                                              [type [response message-id]]))
-                                          requests)]
-                     (into commands' responses')))))
-         (reduce (fn [m cur] (into (or m {}) cur)))
-         (into {}))))
+                (let [{:keys [commands responses]} (get-in db [:contacts/contacts identity])
+                      mixable-commands (commands-model/get-mixable-commands db)
+                      commands'        (->> (merge global-commands commands mixable-commands)
+                                            (mapv (fn [[_ items]]
+                                                    (mapv (fn [v] [v :any]) items))))
+                      responses'       (->> requests
+                                            (mapv (fn [{:keys [message-id type]}]
+                                                    (when-let [responses (get responses type)]
+                                                      (map (fn [response] [response message-id]) responses)))))]
+                  (into commands' responses'))))
+         (apply into)
+         (reduce into))))
 
 (defn split-command-args
   "Returns a list of command's arguments including the command's name.
@@ -133,19 +138,18 @@
          command-args     (split-command-args input-text)
          command-name     (first command-args)]
      (when (starts-as-command? (or command-name ""))
-       (when-let [[command to-message-id]
-                  (-> (filter (fn [[{:keys [name bot]} message-id]]
-                                (= (or (when-not (bots-constants/mailman-bot? bot) bot) name)
-                                   (subs command-name 1)))
-                              (vals possible-actions))
-                      (first))]
-           {:command  command
-            :metadata (if (and (nil? (:to-message-id input-metadata)) (not= :any to-message-id))
-                        (assoc input-metadata :to-message-id to-message-id)
-                        input-metadata)
-            :args     (if (empty? seq-arguments)
-                        (rest command-args)
-                        seq-arguments)}))))
+       (when-let [[{{:keys [message-id]} :request :as command} to-message-id]
+                  (->> possible-actions
+                       (filter (fn [[{:keys [name]} _]]
+                                 (= name (subs command-name 1))))
+                       (first))]
+         {:command  command
+          :metadata (if (and (nil? (:to-message-id input-metadata)) (not= :any message-id))
+                      (assoc input-metadata :to-message-id to-message-id)
+                      input-metadata)
+          :args     (if (empty? seq-arguments)
+                      (rest command-args)
+                      seq-arguments)}))))
   ([{:keys [current-chat-id] :as db} chat-id]
    (selected-chat-command db chat-id (get-in db [:chats chat-id :input-text]))))
 

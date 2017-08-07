@@ -5,12 +5,13 @@
             [status-im.chat.constants :as const]
             [status-im.chat.utils :as chat-utils]
             [status-im.chat.models.input :as input-model]
-            [status-im.chat.models.suggestions :as suggestions]
+            [status-im.chat.models.commands :as commands-model]
             [status-im.components.react :as react-comp]
             [status-im.native-module.core :as status]
             [status-im.utils.datetime :as time]
             [status-im.utils.handlers :refer [register-handler-db register-handler-fx]]
             [status-im.utils.random :as random]
+            [status-im.utils.types :as types]
             [status-im.i18n :as i18n]))
 
 ;;;; Coeffects
@@ -113,19 +114,19 @@
                                               :prev-command        name}]
                          [:load-chat-parameter-box command 0]]}
 
-     prefill-bot-db
-     (update :dispatch-n conj [:update-bot-db {:bot current-chat-id
-                                               :db prefill-bot-db}])
+           prefill-bot-db
+           (update :dispatch-n conj [:update-bot-db {:bot current-chat-id
+                                                      :db prefill-bot-db}])
 
-     (not (and sequential-params
-               prevent-auto-focus?))
-     (update :dispatch-n conj [:chat-input-focus :input-ref])
+           (not (and sequential-params
+                     prevent-auto-focus?))
+           (update :dispatch-n conj [:chat-input-focus :input-ref])
 
-     sequential-params
-     (assoc :dispatch-later (cond-> [{:ms 100 :dispatch [:set-chat-seq-arg-input-text
-                                                         (str/join const/spacing-char prefill)]}]
-                              (not prevent-auto-focus?)
-                              (conj {:ms 100 :dispatch [:chat-input-focus :seq-input-ref]}))))))
+           sequential-params
+           (assoc :dispatch-later (cond-> [{:ms 100 :dispatch [:set-chat-seq-arg-input-text
+                                                                (str/join const/spacing-char prefill)]}]
+                                          (not prevent-auto-focus?)
+                                          (conj {:ms 100 :dispatch [:chat-input-focus :seq-input-ref]}))))))
 
 (register-handler-db
  :set-chat-input-metadata
@@ -173,68 +174,67 @@
      {::blur-rn-component cmp-ref})))
 
 (register-handler-fx
- :update-suggestions
- [trim-v]
- (fn [{{:keys [current-chat-id] :as db} :db} [chat-id text]]
-   (let [chat-id         (or chat-id current-chat-id)
-         chat-text       (str/trim (or text (get-in db [:chats chat-id :input-text]) ""))
-         requests        (->> (suggestions/get-request-suggestions db chat-text)
-                              (remove (fn [{:keys [type]}]
-                                        (= type :grant-permissions))))
-         commands        (suggestions/get-command-suggestions db chat-text)
-         global-commands (suggestions/get-global-command-suggestions db chat-text)
-         all-commands    (->> (into global-commands commands)
-                              (remove (fn [[k {:keys [hidden?]}]] hidden?))
-                              (into {}))
-         {:keys [dapp?]} (get-in db [:contacts/contacts chat-id])
-         new-db          (cond-> db
-                           true (assoc-in [:chats chat-id :request-suggestions] requests)
-                           true (assoc-in [:chats chat-id :command-suggestions] all-commands)
-                           (and dapp?
-                                (str/blank? chat-text))
-                           (assoc-in [:chats chat-id :parameter-boxes :message] nil))
-         new-event       (when (and dapp?
-                                    (not (str/blank? chat-text))
-                                    (every? empty? [requests commands]))
-                           [::check-dapp-suggestions chat-id chat-text])]
-     (cond-> {:db new-db}
-       new-event (assoc :dispatch new-event)))))
+  :update-suggestions
+  [trim-v]
+  (fn [{{:keys [current-chat-id] :as db} :db} [chat-id text]]
+    (let [chat-id         (or chat-id current-chat-id)
+          chat-text       (str/trim (or text (get-in db [:chats chat-id :input-text]) ""))
+          requests        (->> (commands-model/get-request-suggestions db chat-text)
+                               (remove (fn [{:keys [type]}]
+                                         (= type :grant-permissions))))
+          commands        (commands-model/commands-for-chat db chat-id chat-text)
+          {:keys [dapp?]} (get-in db [:contacts/contacts chat-id])
+          new-db          (cond-> db
+                                  true (assoc-in [:chats chat-id :request-suggestions] requests)
+                                  true (assoc-in [:chats chat-id :command-suggestions] commands)
+                                  (and dapp?
+                                       (str/blank? chat-text))
+                                  (assoc-in [:chats chat-id :parameter-boxes :message] nil))
+          new-event       (when (and dapp?
+                                     (not (str/blank? chat-text))
+                                     (every? empty? [requests commands]))
+                            [::check-dapp-suggestions chat-id chat-text])]
+      (cond-> {:db new-db}
+              new-event (assoc :dispatch new-event)))))
 
 (register-handler-fx
- :load-chat-parameter-box
- [trim-v]
- (fn [{{:keys [current-chat-id bot-db] :accounts/keys [current-account-id] :as db} :db}
-      [{:keys [name type bot owner-id] :as command}]]
-   (let [parameter-index (input-model/argument-position db current-chat-id)]
-     (when (and command (> parameter-index -1))
-       (let [data    (get-in db [:local-storage current-chat-id])
-             bot-db  (get bot-db (or bot current-chat-id))
-             path    [(if (= :command type) :commands :responses)
-                      name
-                      :params
-                      parameter-index
-                      :suggestions]
-             args    (-> (get-in db [:chats current-chat-id :input-text])
-                         (input-model/split-command-args)
-                         (rest))
-             seq-arg (get-in db [:chats current-chat-id :seq-argument-input-text])
-             to      (get-in db [:contacts/contacts current-chat-id :address])
-             params  {:parameters {:args    args
-                                   :bot-db  bot-db
-                                   :seq-arg seq-arg}
-                      :context    (merge {:data data
-                                          :from current-account-id
-                                          :to   to}
-                                         (input-model/command-dependent-context-params current-chat-id command))}]
-         {:chat-fx/call-jail {:jail-id (or bot owner-id current-chat-id)
-                              :path    path
-                              :params  params
-                              :callback-events-creator (fn [jail-response]
-                                                         [[:received-bot-response
-                                                           {:chat-id         current-chat-id
-                                                            :command         command
-                                                            :parameter-index parameter-index}
-                                                           jail-response]])}})))))
+  :load-chat-parameter-box
+  [trim-v]
+  (fn [{{:keys [current-chat-id bot-db] :accounts/keys [current-account-id] :as db} :db}
+       [{:keys [name scope type bot owner-id] :as command}]]
+    (let [parameter-index (input-model/argument-position db current-chat-id)]
+      (when (and command (> parameter-index -1))
+        (let [data    (get-in db [:local-storage current-chat-id])
+              bot-db  (get bot-db (or bot current-chat-id))
+              path    [(if (= :command type) :commands :responses)
+                       [name
+                        (if (= :command type)
+                          (commands-model/scope->int scope)
+                          0)]
+                       :params
+                       parameter-index
+                       :suggestions]
+              args    (-> (get-in db [:chats current-chat-id :input-text])
+                          (input-model/split-command-args)
+                          (rest))
+              seq-arg (get-in db [:chats current-chat-id :seq-argument-input-text])
+              to      (get-in db [:contacts/contacts current-chat-id :address])
+              params  {:parameters {:args    args
+                                    :bot-db  bot-db
+                                    :seq-arg seq-arg}
+                       :context    (merge {:data data
+                                           :from current-account-id
+                                           :to   to}
+                                          (input-model/command-dependent-context-params current-chat-id command))}]
+          {:chat-fx/call-jail {:jail-id (or bot owner-id current-chat-id)
+                               :path    path
+                               :params  params
+                               :callback-events-creator (fn [jail-response]
+                                                          [[:received-bot-response
+                                                            {:chat-id         current-chat-id
+                                                             :command         command
+                                                             :parameter-index parameter-index}
+                                                            jail-response]])}})))))
 
 (register-handler-fx
  ::send-message
@@ -355,6 +355,8 @@
                           :chat-id      chat-id
                           :jail-id      (or owner-id jail-id)
                           :content      {:command (:name command)
+                                         :scope   (when (= (:to-message-id metadata) :any)
+                                                    (:scope command))
                                          :params  params
                                          :type    (:type command)}
                           :on-requested (fn [jail-response]

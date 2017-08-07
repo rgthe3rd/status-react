@@ -36,7 +36,6 @@
 
 (defview commands-view []
   [commands [:chat :command-suggestions]
-   responses [:get-responses]
    requests [:chat :request-suggestions]
    show-suggestions? [:show-suggestions?]]
   [view style/commands-root
@@ -51,11 +50,9 @@
    [scroll-view {:horizontal                     true
                  :showsHorizontalScrollIndicator false
                  :keyboardShouldPersistTaps      :always}
-    (let [requests-names (map :type requests)
-          all-commands (merge (into {} commands) (select-keys responses requests-names))
-          all-commands-indexed (map-indexed vector (vals all-commands))]
+    (let [all-commands (apply conj commands requests)]
       [view style/commands
-       (for [[index command] all-commands-indexed]
+       (for [[index command] (map-indexed vector all-commands)]
          ^{:key (str "command-" index)}
          [command-view (= index 0) command])])]])
 

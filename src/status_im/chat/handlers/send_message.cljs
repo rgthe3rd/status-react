@@ -1,13 +1,11 @@
 (ns status-im.chat.handlers.send-message
-  (:require [status-im.utils.handlers :refer [register-handler] :as u]
-            [clojure.string :as s]
-            [status-im.data-store.messages :as messages]
-            [status-im.data-store.handler-data :as handler-data]
-            [status-im.native-module.core :as status]
-            [status-im.utils.random :as random]
-            [status-im.utils.datetime :as time]
+  (:require [clojure.string :as s]
             [re-frame.core :refer [enrich after dispatch path]]
+            [status-im.chat.constants :refer [input-height]]
+            [status-im.chat.handlers.console :as console]
+            [status-im.chat.models.commands :as commands-model]
             [status-im.chat.utils :as cu]
+            [status-im.components.status :as status]
             [status-im.constants :refer [console-chat-id
                                          wallet-chat-id
                                          text-content-type
@@ -15,14 +13,17 @@
                                          content-type-command
                                          content-type-command-request
                                          default-number-of-messages] :as c]
-            [status-im.chat.constants :refer [input-height]]
-            [status-im.utils.datetime :as datetime]
+            [status-im.data-store.messages :as messages]
+            [status-im.data-store.handler-data :as handler-data]
+            [status-im.native-module.core :as status]
             [status-im.protocol.core :as protocol]
-            [taoensso.timbre :refer-macros [debug] :as log]
-            [status-im.chat.handlers.console :as console]
-            [status-im.utils.types :as types]
             [status-im.utils.config :as config]
-            [status-im.utils.clocks :as clocks]))
+            [status-im.utils.clocks :as clocks]
+            [status-im.utils.datetime :as datetime]
+            [status-im.utils.handlers :refer [register-handler] :as u]
+            [status-im.utils.random :as random]
+            [status-im.utils.types :as types]
+            [taoensso.timbre :as log]))
 
 (defn prepare-command
   [identity chat-id clock-value
@@ -37,15 +38,18 @@
                     :prefill        prefill
                     :prefill-bot-db prefillBotDb}
                    {:command (:name command)
+                    :scope   (:scope command)
                     :params  params})
         content' (assoc content :handler-data handler-data
                                 :type (name (:type command))
                                 :content-command (:name command)
-                                :bot (:bot command))]
+                                :content-command-scope (:scope command)
+                                :bot (or (:bot command)
+                                         (:owner-id command)))]
     {:message-id   id
      :from         identity
      :to           chat-id
-     :timestamp    (time/now-ms)
+     :timestamp    (datetime/now-ms)
      :content      content'
      :content-type (or content-type
                        (if request
@@ -109,7 +113,7 @@
 
 (register-handler ::send-command!
   (u/side-effect!
-    (fn [_ [_ add-to-chat-id params hidden-params]] 
+    (fn [_ [_ add-to-chat-id params hidden-params]]
       (dispatch [::add-command add-to-chat-id params])
       (dispatch [::save-command! add-to-chat-id params hidden-params])
       (when (not= add-to-chat-id wallet-chat-id)
@@ -134,7 +138,7 @@
   (u/side-effect!
     (fn [_ [_ {:keys [command chat-id]}]]
       (let [{:keys [to-message]} command]
-        (when to-message
+        (when (and to-message (not= to-message :any))
           (dispatch [:request-answered! chat-id to-message]))))))
 
 (register-handler ::invoke-command-handlers!
@@ -147,7 +151,7 @@
                      id]} :command
              :keys        [chat-id address]
              :as          orig-params}]]
-      (let [{:keys [type name bot owner-id]} command
+      (let [{:keys [type name scope bot owner-id]} command
             handler-type (if (= :command type) :commands :responses)
             to           (get-in contacts [chat-id :address])
             identity     (or owner-id bot chat-id)
@@ -160,13 +164,13 @@
                                                :current-account (get accounts current-account-id)
                                                :message-id      id}
                                         (:async-handler command)
-                                        (assoc :orig-params orig-params))}] 
+                                        (assoc :orig-params orig-params))}]
         (dispatch
           [:check-and-load-commands!
            identity
            #(status/call-jail
               {:jail-id  identity
-               :path     [handler-type name :handler]
+               :path     [handler-type [name (commands-model/scope->int scope)] :handler]
                :params   jail-params
                :callback (if (:async-handler command) ; async handler, we ignore return value
                            (fn [_]
@@ -187,7 +191,7 @@
                            :from         identity
                            :content-type text-content-type
                            :outgoing     true
-                           :timestamp    (time/now-ms)
+                           :timestamp    (datetime/now-ms)
                            :clock-value  (clocks/send clock-value)
                            :show?        true})
             message''   (cond-> message'
@@ -212,7 +216,7 @@
   (u/side-effect!
     (fn [_ [_ {:keys [chat-id message]}]]
       (dispatch [:upsert-chat! {:chat-id   chat-id
-                                :timestamp (time/now-ms)}])
+                                :timestamp (datetime/now-ms)}])
       (messages/save chat-id message))))
 
 (register-handler ::send-dapp-message

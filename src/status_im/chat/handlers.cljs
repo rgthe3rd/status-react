@@ -1,11 +1,9 @@
 (ns status-im.chat.handlers
   (:require-macros [cljs.core.async.macros :as am])
   (:require [re-frame.core :refer [enrich after debug dispatch reg-fx]]
-            [status-im.models.commands :as commands]
             [clojure.string :as string]
             [status-im.components.styles :refer [default-chat-color]]
-            [status-im.chat.models.suggestions :as suggestions]
-            [status-im.chat.constants :as chat-consts]
+            [status-im.chat.constants :as chat-const]
             [status-im.protocol.core :as protocol]
             [status-im.data-store.chats :as chats]
             [status-im.data-store.contacts :as contacts]
@@ -29,7 +27,7 @@
             [status-im.utils.types :refer [json->clj]]
             [status-im.chat.utils :refer [console? not-console? safe-trim]]
             [status-im.utils.gfycat.core :refer [generate-gfy]]
-            status-im.chat.events.input 
+            status-im.chat.events.input
             status-im.chat.events.commands
             status-im.chat.handlers.animation
             status-im.chat.handlers.requests
@@ -128,19 +126,19 @@
 (register-handler :account-generation-message
   (u/side-effect!
     (fn [_]
-      (when-not (messages/get-by-id chat-consts/passphrase-message-id)
+      (when-not (messages/get-by-id chat-const/passphrase-message-id)
         (sign-up-service/account-generation-message)))))
 
 (register-handler :move-to-internal-failure-message
   (u/side-effect!
     (fn [_]
-      (when-not (messages/get-by-id chat-consts/move-to-internal-failure-message-id)
+      (when-not (messages/get-by-id chat-const/move-to-internal-failure-message-id)
         (sign-up-service/move-to-internal-failure-message)))))
 
 (register-handler :show-mnemonic
   (u/side-effect!
     (fn [_ [_ mnemonic signing-phrase]]
-      (let [crazy-math-message? (messages/get-by-id chat-consts/crazy-math-message-id)]
+      (let [crazy-math-message? (messages/get-by-id chat-const/crazy-math-message-id)]
         (sign-up-service/passphrase-messages mnemonic signing-phrase crazy-math-message?)))))
 
 (defn- handle-sms [{body :body}]
@@ -186,7 +184,7 @@
 (defn load-messages!
   ([db] (load-messages! db nil))
   ([{:keys [current-chat-id] :as db} _]
-   (let [messages (messages/get-by-chat-id current-chat-id)] 
+   (let [messages (messages/get-by-chat-id current-chat-id)]
      (assoc db :messages messages))))
 
 (defn init-chat
@@ -456,7 +454,7 @@
         (when dapp-url
           (am/go
             (dispatch [:select-chat-input-command
-                       (assoc (:browse global-commands) :prefill [dapp-url])
+                       (assoc (first (:browse global-commands)) :prefill [dapp-url])
                        nil
                        true])
             (a/<! (a/timeout 100))

@@ -5,7 +5,8 @@
             [status-im.utils.utils :refer [update-if-present]]
             [clojure.walk :refer [stringify-keys keywordize-keys]]
             [cljs.reader :refer [read-string]]
-            [status-im.constants :as c])
+            [status-im.constants :as c]
+            [taoensso.timbre :as log])
   (:refer-clojure :exclude [update]))
 
 (defn- user-statuses-to-map
@@ -101,6 +102,7 @@
   ;; todo remove chat-id parameter
   [chat-id {:keys [message-id content]
             :as   message}]
+  (log/debug "ALWX command save" message)
   (when-not (data-store/exists? message-id)
     (let [content' (if (string? content)
                      content
@@ -113,7 +115,8 @@
       (data-store/save message'))))
 
 (defn update 
-  [{:keys [message-id] :as message}]
+  [{:keys [message-id preview] :as message}]
+  (log/debug "ALWX command update" message)
   (when (data-store/exists? message-id)
     (let [message (update-if-present message :user-statuses vals)]
       (data-store/save message))))
