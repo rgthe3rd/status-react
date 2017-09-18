@@ -1,6 +1,7 @@
 (ns status-im.ui.screens.discover.subs
   (:require [re-frame.core :refer [reg-sub]]
-            [status-im.utils.datetime :as time]))
+            [status-im.utils.datetime :as time]
+            [taoensso.timbre :as log]))
 
 (defn- calculate-priority [{:keys [chats current-public-key]
                             :contacts/keys [contacts]}
@@ -18,10 +19,10 @@
 
 (defn- get-discoveries-by-tags [discoveries current-tag tags]
   (let [tags' (or tags [current-tag])]
-    (filter #(every? (->> (:tags %)
-                          (map :name)
-                          (into (hash-set)))
-                     tags')
+    (filter #(some (->> (:tags %)
+                        (map :name)
+                        (into (hash-set)))
+                   tags')
             (vals discoveries))))
 
 (reg-sub :get-popular-discoveries
@@ -37,7 +38,7 @@
 
 (reg-sub :get-recent-discoveries
   (fn [db]
-    (vals (:discoveries db))))
+    (sort-by :created-at > (vals (:discoveries db)))))
 
 (reg-sub :get-popular-tags
   (fn [db [_ limit]]
