@@ -112,7 +112,7 @@
                                               :result-box          nil
                                               :validation-messages nil
                                               :prev-command        name}]
-                         [:load-chat-parameter-box command 0]]}
+                         [:load-chat-parameter-box command]]}
 
            prefill-bot-db
            (update :dispatch-n conj [:update-bot-db {:bot current-chat-id
@@ -179,14 +179,14 @@
   (fn [{{:keys [current-chat-id] :as db} :db} [chat-id text]]
     (let [chat-id         (or chat-id current-chat-id)
           chat-text       (str/trim (or text (get-in db [:chats chat-id :input-text]) ""))
-          requests        (->> (commands-model/get-request-suggestions db chat-text)
+          requests        (->> (commands-model/get-possible-requests db)
                                (remove (fn [{:keys [type]}]
                                          (= type :grant-permissions))))
-          commands        (commands-model/commands-for-chat db chat-id chat-text)
+          commands        (commands-model/commands-for-chat db chat-id)
           {:keys [dapp?]} (get-in db [:contacts/contacts chat-id])
           new-db          (cond-> db
-                                  true (assoc-in [:chats chat-id :request-suggestions] requests)
-                                  true (assoc-in [:chats chat-id :command-suggestions] commands)
+                                  true (assoc-in [:chats chat-id :possible-requests] requests)
+                                  true (assoc-in [:chats chat-id :possible-commands] commands)
                                   (and dapp?
                                        (str/blank? chat-text))
                                   (assoc-in [:chats chat-id :parameter-boxes :message] nil))

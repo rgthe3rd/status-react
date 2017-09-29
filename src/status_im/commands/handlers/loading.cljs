@@ -3,21 +3,15 @@
             [status-im.utils.handlers :as u]
             [status-im.utils.utils :refer [http-get show-popup]]
             [clojure.string :as s]
-            [status-im.bots.constants :as bots-constants]
-            [status-im.data-store.commands :as commands]
             [status-im.data-store.contacts :as contacts]
             [status-im.data-store.local-storage :as local-storage]
-            [status-im.components.status :as status]
             [status-im.commands.utils :refer [reg-handler]]
-            [status-im.constants :refer [console-chat-id wallet-chat-id]]
+            [status-im.constants :refer [console-chat-id]]
             [status-im.chat.models.commands :as commands-model]
             [status-im.native-module.core :as status]
-            [status-im.i18n :refer [label]]
             [status-im.utils.homoglyph :as h]
             [status-im.utils.js-resources :as js-res]
-            [status-im.utils.random :as random]
-            [status-im.utils.types :refer [json->clj]]
-            [status-im.utils.datetime :as time]
+            [status-im.utils.types :as types]
             [taoensso.timbre :as log]))
 
 
@@ -81,7 +75,7 @@
     (status/parse-jail
       whisper-identity (str local-storage-js file)
       (fn [result]
-        (let [{:keys [error result]} (json->clj result)]
+        (let [{:keys [error result]} (types/json->clj result)]
           (log/debug "Parsing commands results: " error result)
           (if error
             (dispatch [::loading-failed! whisper-identity ::error-in-jail error])

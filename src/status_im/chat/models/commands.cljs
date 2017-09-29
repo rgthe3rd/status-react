@@ -31,7 +31,8 @@
        (vals)
        (filter :mixable?)
        (mapv :commands)
-       (apply merge)))
+       (mapcat #(into [] %))
+       (reduce (fn [acc [k v]] (update acc k #(into % v))) {})))
 
 (defn get-mixable-identities [{:contacts/keys [contacts]}]
   (->> contacts
@@ -51,8 +52,8 @@
         (remove empty?)
         (flatten))))
 
-(defn get-request-suggestions
-  [{:keys [current-chat-id] :as db} text]
+(defn get-possible-requests
+  [{:keys [current-chat-id] :as db}]
   (let [requests (->> (get-in db [:chats current-chat-id :requests])
                       (map (fn [{:keys [type] :as req}]
                              [type (map (fn [resp]
@@ -60,28 +61,28 @@
                                         (get-in db [:contacts/contacts current-chat-id :responses type]))]))
                       (remove (fn [[_ items]] (empty? items)))
                       (into {}))]
-    (find-suggestions requests text)))
+    (find-suggestions requests "")))
 
-(defn get-command-suggestions
-  [{:keys [current-chat-id] :as db} text]
+(defn get-possible-commands
+  [{:keys [current-chat-id] :as db}]
   (->> (get-in db [:chats current-chat-id :contacts])
        (into (get-mixable-identities db))
        (map (fn [{:keys [identity]}]
               (let [commands (get-in db [:contacts/contacts identity :commands])]
-                (find-suggestions commands text))))
+                (find-suggestions commands ""))))
        (flatten)))
 
-(defn get-global-command-suggestions
-  [{:keys [global-commands] :as db} text]
-  (find-suggestions chat-consts/bot-char :name global-commands text))
+(defn get-possible-global-commands
+  [{:keys [global-commands] :as db}]
+  (find-suggestions chat-consts/bot-char :name global-commands ""))
 
 (defn commands-for-chat
   [{:keys          [global-commands chats]
     :contacts/keys [contacts]
     :accounts/keys [accounts current-account-id]
-    :as            db} chat-id text]
-  (let [global-commands (get-global-command-suggestions db text)
-        commands        (get-command-suggestions db text)
+    :as            db} chat-id]
+  (let [global-commands (get-possible-global-commands db)
+        commands        (get-possible-commands db)
         account         (get accounts current-account-id)
         commands        (-> (into [] global-commands)
                             (into commands))

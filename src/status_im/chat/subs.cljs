@@ -130,8 +130,8 @@
           show-suggestions? (subscribe [:chat-ui-props :show-suggestions? chat-id])
           input-text        (subscribe [:chat :input-text chat-id])
           selected-command  (subscribe [:selected-chat-command chat-id])
-          requests          (subscribe [:chat :request-suggestions chat-id])
-          commands          (subscribe [:chat :command-suggestions chat-id])]
+          requests          (subscribe [:chat :possible-requests chat-id])
+          commands          (subscribe [:chat :possible-commands chat-id])]
       (and (or @show-suggestions? (input-model/starts-as-command? (str/trim (or @input-text ""))))
            (not (:command @selected-command))
            (or (not-empty @requests)

@@ -35,9 +35,8 @@
 (spec/def :contact/dapp-hash (spec/nilable int?))
 (spec/def :contact/bot-url (spec/nilable string?))
 (spec/def :contact/global-command (spec/nilable map?))
-;; TODO(alwx):
-;;(spec/def :contact/commands (spec/nilable (spec/map-of vector? map?)))
-;;(spec/def :contact/responses (spec/nilable (spec/map-of vector? map?)))
+(spec/def :contact/commands (spec/nilable (spec/map-of keyword? seq?)))
+(spec/def :contact/responses (spec/nilable (spec/map-of keyword? seq?)))
 (spec/def :contact/commands-loaded? (spec/nilable boolean?))
 (spec/def :contact/subscriptions (spec/nilable map?))
 ;true when contact added using status-dev-cli

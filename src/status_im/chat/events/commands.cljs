@@ -82,7 +82,7 @@
           :contacts/keys [contacts]} db
          jail-id (or bot jail-id chat-id)
          jail-id (if (get-in chats [jail-id :group-chat])
-                   (get-in chats [jail-id :command-suggestions (keyword command) :owner-id])
+                   (get-in chats [jail-id :possible-commands (keyword command-name) :owner-id])
                    jail-id)]
      (if (get-in contacts [jail-id :commands-loaded?])
        (let [path          [(if (= :response (keyword type)) :responses :commands)

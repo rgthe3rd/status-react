@@ -3,7 +3,7 @@
             [status-im.chat.models.input :as input]))
 
 (def fake-db
-  {:global-commands   {:command1 {:name "global-command1"}}
+  {:global-commands   {:command1 '({:name "global-command1"})}
    :chats             {"test1" {:contacts      [{:identity "0x1"}]
                                 :requests      nil
                                 :seq-arguments ["arg1" "arg2"]}
@@ -16,10 +16,10 @@
                                                  {:identity "0x2"}]
                                 :requests       [{:message-id "id2" :type :request2}]
                                 :input-metadata {:meta-k "meta-v"}}}
-   :contacts/contacts {"0x1" {:commands  {:command2 {:name "command2"}}
+   :contacts/contacts {"0x1" {:commands  {:command2 '({:name "command2"})}
                               :responses nil}
-                       "0x2" {:commands  {:command3 {:name "command3"}}
-                              :responses {:request1 {:name "request1"}}}}})
+                       "0x2" {:commands  {:command3 '({:name "command3"})}
+                              :responses {:request1 '({:name "request1"})}}}})
 
 (deftest text->emoji
   (is (nil? (input/text->emoji nil)))
@@ -32,27 +32,6 @@
   (is (false? (input/text-ends-with-space? "")))
   (is (false? (input/text-ends-with-space? "word1 word2 word3")))
   (is (true? (input/text-ends-with-space? "word1 word2 "))))
-
-(deftest possible-chat-actions
-  (is (= (input/possible-chat-actions fake-db "non-existent-chat") {}))
-  (is (= (input/possible-chat-actions fake-db "test1")
-         {:command1 [{:name "global-command1"} :any]
-          :command2 [{:name "command2"} :any]}))
-  (is (= (input/possible-chat-actions fake-db "test1")
-         {:command1 [{:name "global-command1"} :any]
-          :command2 [{:name "command2"} :any]}))
-  (is (= (input/possible-chat-actions fake-db "test2")
-         {:command1 [{:name "global-command1"} :any]
-          :command2 [{:name "command2"} :any]
-          :command3 [{:name "command3"} :any]
-          :request1 [{:name "request1"} "id1"]}))
-  (is (= (input/possible-chat-actions fake-db "test3")
-         {:command1 [{:name "global-command1"} :any]
-          :command2 [{:name "command2"} :any]}))
-  (is (= (input/possible-chat-actions fake-db "test4")
-         {:command1 [{:name "global-command1"} :any]
-          :command2 [{:name "command2"} :any]
-          :command3 [{:name "command3"} :any]})))
 
 (deftest split-command-args
   (is (nil? (input/split-command-args nil)))
@@ -69,16 +48,16 @@
 
 (deftest selected-chat-command
   (is (= (input/selected-chat-command fake-db "test1" "/global-command1")
-         {:command {:name "global-command1"} :metadata nil :args ["arg1" "arg2"]}))
+         {:command {:name "global-command1"} :metadata {:to-message-id :any} :args ["arg1" "arg2"]}))
   (is (= (input/selected-chat-command fake-db "test2" "/global-command1")
-         {:command {:name "global-command1"} :metadata nil :args []}))
+         {:command {:name "global-command1"} :metadata {:to-message-id :any} :args []}))
   (is (nil? (input/selected-chat-command fake-db "test1" "/command3")))
   (is (= (input/selected-chat-command fake-db "test1" "/command2")
-         {:command {:name "command2"} :metadata nil :args ["arg1" "arg2"]}))
+         {:command {:name "command2"} :metadata {:to-message-id :any} :args ["arg1" "arg2"]}))
   (is (= (input/selected-chat-command fake-db "test2" "/request1 arg1")
          {:command {:name "request1"} :metadata {:to-message-id "id1"} :args ["arg1"]}))
   (is (= (input/selected-chat-command fake-db "test4" "/command2 arg1")
-         {:command {:name "command2"} :metadata {:meta-k "meta-v"} :args ["arg1"]})))
+         {:command {:name "command2"} :metadata {:to-message-id :any :meta-k "meta-v"} :args ["arg1"]})))
 
 (deftest current-chat-argument-position
   (is (= (input/current-chat-argument-position

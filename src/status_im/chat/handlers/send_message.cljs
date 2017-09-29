@@ -1,20 +1,16 @@
 (ns status-im.chat.handlers.send-message
   (:require [clojure.string :as s]
-            [re-frame.core :refer [enrich after dispatch path]]
-            [status-im.chat.constants :refer [input-height]]
+            [re-frame.core :refer [after dispatch path]]
             [status-im.chat.handlers.console :as console]
             [status-im.chat.models.commands :as commands-model]
             [status-im.chat.utils :as cu]
-            [status-im.components.status :as status]
             [status-im.constants :refer [console-chat-id
                                          wallet-chat-id
                                          text-content-type
                                          content-type-log-message
                                          content-type-command
-                                         content-type-command-request
-                                         default-number-of-messages] :as c]
+                                         content-type-command-request] :as c]
             [status-im.data-store.messages :as messages]
-            [status-im.data-store.handler-data :as handler-data]
             [status-im.native-module.core :as status]
             [status-im.protocol.core :as protocol]
             [status-im.utils.config :as config]

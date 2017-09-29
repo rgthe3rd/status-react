@@ -33,7 +33,8 @@
              user-status/schema
              contact-group/schema
              group-contact/schema
-             local-storage/schema])
+             local-storage/schema
+             handler-data/schema])
 
 (defn migration [old-realm new-realm]
   (log/debug "migrating v15 account database: " old-realm new-realm))

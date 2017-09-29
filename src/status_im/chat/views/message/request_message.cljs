@@ -8,7 +8,6 @@
                                                 icon
                                                 touchable-highlight]]
             [status-im.chat.styles.message.message :as st]
-            [status-im.accessibility-ids :as id]
             [status-im.chat.models.commands :as commands]
             [status-im.components.animation :as anim]
             [taoensso.timbre :as log]))

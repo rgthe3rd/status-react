@@ -100,9 +100,7 @@
 
 (defn save
   ;; todo remove chat-id parameter
-  [chat-id {:keys [message-id content]
-            :as   message}]
-  (log/debug "ALWX command save" message)
+  [chat-id {:keys [message-id content] :as message}]
   (when-not (data-store/exists? message-id)
     (let [content' (if (string? content)
                      content
@@ -116,7 +114,6 @@
 
 (defn update 
   [{:keys [message-id preview] :as message}]
-  (log/debug "ALWX command update" message)
   (when (data-store/exists? message-id)
     (let [message (update-if-present message :user-statuses vals)]
       (data-store/save message))))

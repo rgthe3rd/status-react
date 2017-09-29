@@ -35,8 +35,8 @@
      (chat-utils/command-name command)]]])
 
 (defview commands-view []
-  [commands [:chat :command-suggestions]
-   requests [:chat :request-suggestions]
+  [commands [:chat :possible-commands]
+   requests [:chat :possible-requests]
    show-suggestions? [:show-suggestions?]]
   [view style/commands-root
    [view style/command-list-icon-container
