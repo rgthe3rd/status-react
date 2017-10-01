@@ -947,6 +947,7 @@
 				A97BA941B2FB44B4B66EE6D3 /* Frameworks */,
 				1E7837547A9A40E18AD63CF3 /* Resources */,
 				5C1C8762251D6EF495FB2384 /* Pods */,
+				B280E73E1F7E6CB000B5E1A6 /* Recovered References */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -1049,6 +1050,26 @@
 				B24FC7F21DE718EF00D694FF /* libSplashScreen.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		B280E73E1F7E6CB000B5E1A6 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				674B3D9595A047AB8D518F4E /* libRNFS.a */,
+				52F6ED6465184513A082652B /* libRNI18n.a */,
+				DF1CD4C3D1254774ACCAE4E8 /* libBVLinearGradient.a */,
+				5535217F57E44D77AA9CF083 /* libRCTOrientation.a */,
+				78C55F15EB4D4DAF9202A662 /* libRNRandomBytes.a */,
+				11632AA0A5F84F029DD91797 /* libRNVectorIcons.a */,
+				CD48A32459B64E96843BB238 /* libRealmReact.a */,
+				C2A4E93F6B154AEFA3485B45 /* libTcpSockets.a */,
+				2BEE3436791D42248F853999 /* libRCTImageResizer.a */,
+				4EC426A98043452BB6F9C134 /* libRNInstabug.a */,
+				AF2BF381BC7B4EB0887F0091 /* libRNSVG.a */,
+				7F752F17B1E04216B1337A72 /* libRNFIRMessaging.a */,
+				B2E945DF3D3D4E58845B95DA /* libRCTMapboxGL.a */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 		B2A5F4301DEC36B200174F4D /* Products */ = {

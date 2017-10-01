@@ -50,8 +50,8 @@
 
 (defview suggestions-view []
   [show-suggestions? [:show-suggestions?]
-   requests [:chat :possible-requests]
-   commands [:chat :possible-commands]]
+   requests [:chat-actions :possible-requests]
+   commands [:chat-actions :possible-commands]]
   (when show-suggestions?
     [expandable-view {:key        :suggestions
                       :draggable? false

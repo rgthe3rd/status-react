@@ -79,15 +79,13 @@
  (fn [db]
    (input-model/modified-db-after-change db)))
 
-(register-handler-fx
+(register-handler-db
  :set-chat-input-text
  [trim-v]
- (fn [{{:keys [current-chat-id chats chat-ui-props] :as db} :db} [text chat-id]]
-   (let [chat-id (or chat-id current-chat-id)]
-     {:db (assoc-in db
-                    [:chats chat-id :input-text]
-                    (input-model/text->emoji text))
-      :dispatch [:update-suggestions chat-id text]})))
+ (fn [{:keys [current-chat-id chats chat-ui-props] :as db} [text chat-id]]
+   (let [chat-id (or chat-id current-chat-id)
+         text    (input-model/text->emoji text)]
+     (assoc-in db [:chats chat-id :input-text] text))))
 
 (register-handler-fx
  :add-to-chat-input-text
@@ -355,7 +353,7 @@
                           :chat-id      chat-id
                           :jail-id      (or owner-id jail-id)
                           :content      {:command (:name command)
-                                         :scope   (when (= (:to-message-id metadata) :any)
+                                         :scope   (when-not (:to-message-id metadata)
                                                     (:scope command))
                                          :params  params
                                          :type    (:type command)}
@@ -448,8 +446,10 @@
  (fn [{{:keys [current-chat-id] :as db} :db} [selection]]
    (let [input-text (get-in db [:chats current-chat-id :input-text])
          command    (input-model/selected-chat-command db current-chat-id input-text)]
-     (cond-> {:dispatch-n [[:set-chat-ui-props {:selection selection}]
-                           [:load-chat-parameter-box (:command command)]]}
+     (cond-> {:dispatch-n [[:set-chat-ui-props {:selection selection}]]}
+
+       command
+       (update :dispatch-n conj [:load-chat-parameter-box (:command command)])
 
        (and (= selection (+ (count const/command-char)
                             (count (get-in command [:command :name]))

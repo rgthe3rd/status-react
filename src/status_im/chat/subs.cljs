@@ -37,6 +37,15 @@
     (:chats db)))
 
 (reg-sub
+  :chat-actions
+  :<- [:chats]
+  :<- [:get-current-chat-id]
+  :<- [:chat :input-text]
+  (fn [[chats chat-id text] [_ type]]
+    (->> (get-in chats [chat-id type])
+         (filter #(or (str/includes? (chat-utils/command-name %) ""))))))
+
+(reg-sub
   :chat
   :<- [:chats]
   :<- [:get-current-chat-id]
