@@ -21,7 +21,7 @@
                                              :default false}
                           :dapp-url         {:type     :string
                                              :optional true}
-                          :bot-url          {:type`     :string
+                          :bot-url          {:type     :string
                                              :optional true}
                           :global-command   {:type     :command
                                              :optional true}

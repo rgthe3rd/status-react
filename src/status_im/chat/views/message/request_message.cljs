@@ -61,6 +61,7 @@
        #(reset! loop? false)
        :reagent-render
        (fn [message-id {command-icon :icon :as command} on-press-handler]
+         (log/debug "ALWX C" command)
          (when command
            [touchable-highlight
             {:on-press            on-press-handler
@@ -72,15 +73,14 @@
 
 (defn message-content-command-request
   [{:keys [message-id chat-id]}]
-  (let [commands-atom       (subscribe [:get-commands-and-responses chat-id])
+  (let [requests            (subscribe [:chat-actions :possible-requests])
         answered?           (subscribe [:is-request-answered? message-id])
         status-initialized? (subscribe [:get :status-module-initialized?])
         markup              (subscribe [:get-message-preview message-id])]
-    (fn [{:keys [message-id content from incoming-group]}]
-      (let [commands @commands-atom
-            {:keys        [prefill prefill-bot-db prefillBotDb params]
+    (fn [{:keys [message-id content from incoming-group] :as message}]
+      (let [{:keys        [prefill prefill-bot-db prefillBotDb params]
              text-content :text} content
-            {:keys [command content]} (commands/parse-command-request commands content)
+            {:keys [command content]} (commands/parse-command-request @requests message)
             command  (if (and params command)
                        (merge command {:prefill        prefill
                                        :prefill-bot-db (or prefill-bot-db prefillBotDb)})

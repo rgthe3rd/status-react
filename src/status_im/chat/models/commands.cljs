@@ -55,10 +55,10 @@
 (defn get-possible-requests
   [{:keys [current-chat-id] :as db}]
   (let [requests (->> (get-in db [:chats current-chat-id :requests])
-                      (map (fn [{:keys [type] :as req}]
+                      (map (fn [{:keys [type chat-id bot] :as req}]
                              [type (map (fn [resp]
                                           (assoc resp :request req))
-                                        (get-in db [:contacts/contacts current-chat-id :responses type]))]))
+                                        (get-in db [:contacts/contacts (or bot chat-id) :responses type]))]))
                       (remove (fn [[_ items]] (empty? items)))
                       (into {}))]
     (find-suggestions requests "")))
@@ -110,8 +110,9 @@
         (update content :command #((keyword command) commands))))
     content))
 
-(defn parse-command-request [commands content]
-  (log/debug "ALWX parse-command-request" commands content)
-  (update content :command (fn [name]
-                             ;; TODO(alwx): probably not `first` !!
-                             (first ((keyword name) commands)))))
+(defn parse-command-request [possible-requests {:keys [message-id content] :as message}]
+  (let [possible-requests (->> possible-requests
+                               (map (fn [{:keys [request] :as message}]
+                                      [(:message-id request) message]))
+                               (into {}))]
+    (assoc content :command (get possible-requests message-id))))

@@ -43,7 +43,7 @@
   :<- [:chat :input-text]
   (fn [[chats chat-id text] [_ type]]
     (->> (get-in chats [chat-id type])
-         (filter #(or (str/includes? (chat-utils/command-name %) ""))))))
+         (filter #(or (str/includes? (chat-utils/command-name %) (or text "")))))))
 
 (reg-sub
   :chat
@@ -61,17 +61,6 @@
   :get-chat-by-id
   (fn [_ [_ chat-id]]
     (chats/get-by-id chat-id)))
-
-(reg-sub :get-bots-suggestions
-  (fn [db]
-    (let [chat-id (subscribe [:get-current-chat-id])]
-      (get-in db [:bots-suggestions @chat-id]))))
-
-(reg-sub
-  :get-responses
-  (fn [db [_ chat-id]]
-    (let [current-chat (or chat-id (db :current-chat-id))]
-      (or (get-in db [:contacts/contacts current-chat :responses]) {}))))
 
 (reg-sub :get-commands-and-responses
   (fn [{:keys [chats global-commands] :contacts/keys [contacts]} [_ chat-id]]
