@@ -41,8 +41,8 @@
   :<- [:chats]
   :<- [:get-current-chat-id]
   :<- [:chat :input-text]
-  (fn [[chats chat-id text] [_ type]]
-    (->> (get-in chats [chat-id type])
+  (fn [[chats current-chat-id text] [_ type chat-id]]
+    (->> (get-in chats [(or chat-id current-chat-id) type])
          (filter #(or (str/includes? (chat-utils/command-name %) (or text "")))))))
 
 (reg-sub

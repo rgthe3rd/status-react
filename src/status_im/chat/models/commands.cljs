@@ -110,9 +110,15 @@
         (update content :command #((keyword command) commands))))
     content))
 
-(defn parse-command-request [possible-requests {:keys [message-id content] :as message}]
-  (let [possible-requests (->> possible-requests
-                               (map (fn [{:keys [request] :as message}]
-                                      [(:message-id request) message]))
-                               (into {}))]
-    (assoc content :command (get possible-requests message-id))))
+(defn find-command-for-request
+  [{:keys [message-id content] :as message} possible-requests possible-commands]
+  (let [requests (->> possible-requests
+                      (map (fn [{:keys [request] :as message}]
+                             [(:message-id request) message]))
+                      (into {}))
+        commands (->> possible-commands
+                      (map (fn [{:keys [name] :as message}]
+                             [name message]))
+                      (into {}))]
+    (assoc content :command (or (get requests message-id)
+                                (get commands (get content :command))))))
