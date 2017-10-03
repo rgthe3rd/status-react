@@ -132,10 +132,9 @@
 
 (register-handler ::dispatch-responded-requests!
   (u/side-effect!
-    (fn [_ [_ {:keys [command chat-id]}]]
-      (let [{:keys [to-message]} command]
-        (when (and to-message (not= to-message :any))
-          (dispatch [:request-answered! chat-id to-message]))))))
+    (fn [_ [_ {{:keys [to-message]} :command :keys [chat-id]}]]
+      (when to-message
+        (dispatch [:request-answered! chat-id to-message])))))
 
 (register-handler ::invoke-command-handlers!
   (u/side-effect!
@@ -165,14 +164,14 @@
           [:check-and-load-commands!
            identity
            #(status/call-jail
-              {:jail-id  identity
-               :path     [handler-type [name (commands-model/scope->int scope)] :handler]
-               :params   jail-params
-               :callback (if (:async-handler command) ; async handler, we ignore return value
-                           (fn [_]
-                             (log/debug "Async command handler called"))
-                           (fn [res]
-                             (dispatch [:command-handler! chat-id orig-params res])))})])))))
+             {:jail-id  identity
+              :path     [handler-type [name (commands-model/scope->bit-mask scope)] :handler]
+              :params   jail-params
+              :callback (if (:async-handler command) ; async handler, we ignore return value
+                          (fn [_]
+                            (log/debug "Async command handler called"))
+                          (fn [res]
+                            (dispatch [:command-handler! chat-id orig-params res])))})])))))
 
 (register-handler :prepare-message
   (u/side-effect!

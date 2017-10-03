@@ -81,7 +81,7 @@
     (fn [{:keys [message-id content from incoming-group] :as message}]
       (let [{:keys        [prefill prefill-bot-db prefillBotDb params]
              text-content :text} content
-            {:keys [command content]} (commands/find-command-for-request message requests commands)
+            {:keys [command content]} (commands/set-command-for-request message requests commands)
             command          (if (and params command)
                                (merge command {:prefill        prefill
                                                :prefill-bot-db (or prefill-bot-db prefillBotDb)})

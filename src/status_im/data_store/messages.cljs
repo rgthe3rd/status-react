@@ -5,8 +5,7 @@
             [status-im.utils.utils :refer [update-if-present]]
             [clojure.walk :refer [stringify-keys keywordize-keys]]
             [cljs.reader :refer [read-string]]
-            [status-im.constants :as c]
-            [taoensso.timbre :as log])
+            [status-im.constants :as c])
   (:refer-clojure :exclude [update]))
 
 (defn- user-statuses-to-map
@@ -113,7 +112,7 @@
       (data-store/save message'))))
 
 (defn update 
-  [{:keys [message-id preview] :as message}]
+  [{:keys [message-id] :as message}]
   (when (data-store/exists? message-id)
     (let [message (update-if-present message :user-statuses vals)]
       (data-store/save message))))

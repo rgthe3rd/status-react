@@ -6,7 +6,9 @@ var _status_catalog = {
     },
     status = {};
 
-function transformScope(scope) {
+function scopeToBitMask(scope) {
+    // this function transforms scopes map to a single integer by generating a bit mask
+    // this similar method also exists on clojure side: status-im.chat.models.commands/scope->bit-mask
     return (scope["global?"] ? 1 : 0) |
         (scope["registered-only?"] ? 2 : 0) |
         (scope["personal-chats?"] ? 4 : 0) |
@@ -20,7 +22,7 @@ function Response() {
 }
 
 Command.prototype.addToCatalog = function () {
-    _status_catalog.commands[[this.name, this.scope.hash]] = this;
+    _status_catalog.commands[[this.name, this.scope.bitmask]] = this;
 };
 
 Command.prototype.param = function (parameter) {
@@ -57,7 +59,7 @@ Command.prototype.create = function (com) {
     this["scope"]["personal-chats?"] = com["scope"] == null || com["scope"]["personalChats"] === true;
     this["scope"]["group-chats?"] = com["scope"] == null || com["scope"]["groupChats"] === true;
     this["scope"]["can-use-for-dapps?"] = com["scope"] == null || com["scope"]["canUseForDApps"] === true;
-    this["scope"]["hash"] = transformScope(this["scope"]);
+    this["scope"]["bitmask"] = scopeToBitMask(this["scope"]);
 
     this.addToCatalog();
 

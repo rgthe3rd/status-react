@@ -27,9 +27,8 @@
   :<- [:get-contacts]
   (fn [contacts]
     (->> contacts
-         (remove (fn [[_ {:keys [pending? mixable? whisper-identity]}]]
-                   (or (true? pending?)
-                       (true? mixable?))))
+         (remove (fn [[_ {:keys [pending? mixable?]}]]
+                   (or pending? mixable?)))
          (sort-contacts))))
 
 (reg-sub

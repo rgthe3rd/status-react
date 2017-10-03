@@ -284,8 +284,6 @@ function validateSend(params, context) {
         params["bot-db"] = {};
     }
 
-    console.log(context);
-
     if (!params["bot-db"]["public"]
         || !params["bot-db"]["public"]["recipient"]
         || !params["bot-db"]["public"]["recipient"]["address"]) {

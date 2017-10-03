@@ -207,7 +207,7 @@
               path    [(if (= :command type) :commands :responses)
                        [name
                         (if (= :command type)
-                          (commands-model/scope->int scope)
+                          (commands-model/scope->bit-mask scope)
                           0)]
                        :params
                        parameter-index

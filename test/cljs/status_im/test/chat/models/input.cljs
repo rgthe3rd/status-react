@@ -3,7 +3,7 @@
             [status-im.chat.models.input :as input]))
 
 (def fake-db
-  {:global-commands   {:command1 '({:name "global-command1"})}
+  {:global-commands   {:command1 (list {:name "global-command1"})}
    :chats             {"test1" {:contacts      [{:identity "0x1"}]
                                 :requests      nil
                                 :seq-arguments ["arg1" "arg2"]}
@@ -16,10 +16,10 @@
                                                  {:identity "0x2"}]
                                 :requests       [{:message-id "id2" :type :request2}]
                                 :input-metadata {:meta-k "meta-v"}}}
-   :contacts/contacts {"0x1" {:commands  {:command2 '({:name "command2"})}
+   :contacts/contacts {"0x1" {:commands  {:command2 (list {:name "command2"})}
                               :responses nil}
-                       "0x2" {:commands  {:command3 '({:name "command3"})}
-                              :responses {:request1 '({:name "request1"})}}}})
+                       "0x2" {:commands  {:command3 (list {:name "command3"})}
+                              :responses {:request1 (list {:name "request1"})}}}})
 
 (deftest text->emoji
   (is (nil? (input/text->emoji nil)))

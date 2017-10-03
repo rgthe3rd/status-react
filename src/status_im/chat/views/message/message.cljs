@@ -133,7 +133,7 @@
    contact-chat [:get-in [:chats (if outgoing to from)]]
    preview [:get-message-preview message-id]]
   (let [commands (merge commands from-commands)
-        {:keys [command params]} (commands/parse-command-message-content commands global-commands content)
+        {:keys [command params]} (commands/set-command-for-content commands global-commands content)
         {:keys     [name type]
          icon-path :icon} command]
     [view st/content-command-view

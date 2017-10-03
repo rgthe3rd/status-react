@@ -9,7 +9,7 @@
             [status-im.data-store.realm.schemas.account.v10.message :as message]
             [status-im.data-store.realm.schemas.account.v12.pending-message :as pending-message]
             [status-im.data-store.realm.schemas.account.v1.processed-message :as processed-message]
-            [status-im.data-store.realm.schemas.account.v1.request :as request]
+            [status-im.data-store.realm.schemas.account.v15.request :as request]
             [status-im.data-store.realm.schemas.account.v1.tag :as tag]
             [status-im.data-store.realm.schemas.account.v1.user-status :as user-status]
             [status-im.data-store.realm.schemas.account.v5.contact-group :as contact-group]

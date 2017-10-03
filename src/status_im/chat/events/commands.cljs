@@ -87,7 +87,7 @@
      (if (get-in contacts [jail-id :commands-loaded?])
        (let [path          [(if (= :response (keyword type)) :responses :commands)
                             [(if content-command-name content-command-name command-name)
-                             (commands-model/scope->int (or scope content-command-scope))]
+                             (commands-model/scope->bit-mask (or scope content-command-scope))]
                             data-type]
              to            (get-in contacts [chat-id :address])
              jail-params   {:parameters params
